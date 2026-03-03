@@ -1,0 +1,15 @@
+{
+  "name": "freebsd-claude-skills",
+  "version": "0.1.0",
+  "description": "Claude Code skills for FreeBSD ports development",
+  "author": "Li-Wen Hsu",
+  "license": "BSD-2-Clause",
+  "skills": [
+    "skills/port-update",
+    "skills/port-bug",
+    "skills/port-security",
+    "skills/port-phab",
+    "skills/poudriere",
+    "skills/port-commit"
+  ]
+}
