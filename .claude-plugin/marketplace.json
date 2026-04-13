@@ -5,11 +5,11 @@
   "author": "Li-Wen Hsu",
   "license": "BSD-2-Clause",
   "skills": [
-    "skills/port-update",
     "skills/port-bug",
-    "skills/port-security",
+    "skills/port-commit",
     "skills/port-phab",
-    "skills/poudriere",
-    "skills/port-commit"
+    "skills/port-security",
+    "skills/port-update",
+    "skills/poudriere"
   ]
 }

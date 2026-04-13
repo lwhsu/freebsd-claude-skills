@@ -6,12 +6,12 @@ Claude Code skills for FreeBSD development.
 
 | Skill | Description |
 |-------|-------------|
-| `port-update` | Version update workflow (bump, patch, test, commit) |
 | `port-bug` | Process Bugzilla tickets (triage, apply patches, close) |
-| `port-security` | Security advisory workflow (VuXML + port updates) |
-| `port-phab` | Process Phabricator reviews |
-| `poudriere` | Test builds with poudriere |
 | `port-commit` | Commit message formatting with FreeBSD trailers |
+| `port-phab` | Process Phabricator reviews |
+| `port-security` | Security advisory workflow (VuXML + port updates) |
+| `port-update` | Version update workflow (bump, patch, test, commit) |
+| `poudriere` | Test builds with poudriere |
 
 ## Installation
 
