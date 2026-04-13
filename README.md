@@ -12,6 +12,7 @@ Claude Code skills for FreeBSD development.
 | `port-security` | Security advisory workflow (VuXML + port updates) |
 | `port-update` | Version update workflow (bump, patch, test, commit) |
 | `poudriere` | Test builds with poudriere |
+| `src-mfc` | MFC commits from main to supported stable branches |
 
 ## Installation
 
@@ -30,8 +31,10 @@ sh setup.sh --remove
 
 ## Usage
 
-In a Claude Code session within a FreeBSD ports tree:
+In a Claude Code session within a FreeBSD ports or src tree:
 
+- `/src-mfc abc1234` - MFC a commit from main to all supported stable branches
+- `/src-mfc abc1234 def5678 -b 15` - MFC two commits (squashed) to stable/15 only
 - `/port-update devel/py-foo 1.2.3` - Update a port to a new version
 - `/port-bug 123456` - Process a Bugzilla ticket
 - `/port-security` - Handle a security advisory
