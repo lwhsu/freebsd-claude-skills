@@ -41,15 +41,24 @@ Rules:
 
 ### 3. Sync changes to steropes
 
-The hermes user on steropes has no GitHub SSH key, so `git fetch aitna` won't work.
-**Preferred workflow for iterative fixes**: SCP changed files directly.
+Always use git — never SCP individual files. hermes has `/pithos/hermes/aitna.id_ed25519` for GitHub access (aitna is a private repo).
 
+Push branch to aitna from local:
 ```sh
-scp -i ~/cyclopes/hermes.id_ed25519 /path/to/Makefile \
-    hermes@steropes.centralus.cloudapp.azure.com:/pithos/hermes/freebsd-ports/<category>/<port>/Makefile
+GIT_SSH_COMMAND="ssh -i ~/cyclopes/lwhsu-bot-id_ed25519" \
+    git -C /home/lwhsu/freebsd-ports push aitna <branch>
 ```
 
-For a full tree sync, push branch to aitna from local and use HTTPS remote on steropes, or SCP all changed files.
+Then on steropes, fetch and reset (always reset + clean to match aitna exactly):
+```sh
+ssh -i ~/cyclopes/hermes.id_ed25519 hermes@steropes.centralus.cloudapp.azure.com \
+    "GIT_SSH_COMMAND='ssh -i /pithos/hermes/aitna.id_ed25519' \
+     git -C /pithos/hermes/freebsd-ports fetch aitna && \
+     git -C /pithos/hermes/freebsd-ports reset --hard aitna/<branch> && \
+     git -C /pithos/hermes/freebsd-ports clean -fd"
+```
+
+Development/try-n-error commits are fine in aitna history — rebase/squash only after development is complete.
 
 ### 4. Run poudriere (on steropes, via SSH)
 
@@ -78,9 +87,11 @@ Shows phase (lib-depends → build → stage), CPU%, MEM%, elapsed time.
 
 **After completion:**
 ```sh
-ssh ... "sudo poudriere status -f -j 15_0_amd64 | tail -3"
+ssh ... "sudo poudriere status -f -j 15_0_amd64 | awk 'NR==1 || /15_0_amd64/'"
 ```
-Check `BUILT` and `FAIL` columns.
+Always use `awk` to show the header row alongside the data row. The STATUS column value ("done" vs "parallel_build") is variable-width and causes visual column shift — counting without the header leads to misreading FAIL=1 as BUILT=1.
+
+Column order: STATUS QUEUE INSPECT IGNORE **BUILT** **FAIL** SKIP FETCH REMAIN TIME
 
 For long builds (e.g. Rust ports ~12-14 min), use `ScheduleWakeup` at 270s intervals to poll.
 
@@ -100,7 +111,8 @@ ssh ... "grep -E '^error(\[|:)' .../logs/<pkgname>.log | head -20"
 ```
 
 Common failures:
-- `check-plist`: missing or extra files in pkg-plist
+- `check-plist` — "Orphaned: bin/foo": file installed by `do-install` but missing from `PLIST_FILES`/`pkg-plist`. With `CARGO_INSTALL=no`, every binary must be listed explicitly.
+- `check-plist` — missing file: listed in plist but not in STAGEDIR
 - `stage-qa`: staging issues
 - Patch apply failures: patches need rebasing
 - Dependency issues: missing `BUILD_DEPENDS` or `LIB_DEPENDS`
@@ -153,6 +165,10 @@ post-patch:
 ```
 
 Discover affected crates from errors like `use of unresolved module platform_impl` or `no field X on type Y`. Add the crate to `_FREEBSD_PATCH_CRATES` and rebuild.
+
+### FreeBSD cfg guards in patches
+
+Always use `#[cfg(target_os = "freebsd")]` directly in FreeBSD port patches — never `#[cfg(not(any(target_os = "linux", target_os = "macos", ...)))]`. The negation form accidentally matches other platforms and is semantically wrong.
 
 ## Tips
 
