@@ -39,13 +39,21 @@ Rules:
 - If `FLAVORS` is non-empty → use `@all` to test all flavors
 - Otherwise → use the bare port name
 
-### 3. Run poudriere
+### 3. Select the jail
+
+**Always** run this first to find the available jails:
+
+```sh
+sudo poudriere jail -l
+```
+
+If the user has not specified a jail, pick the one with the **highest version number** (newest release). Do not use a hardcoded jail name from memory — always check.
+
+### 4. Run poudriere
 
 ```sh
 sudo poudriere bulk -tr -b latest -NN -C -j <jail> <category/portname>[@all]
 ```
-
-Where `<jail>` is the poudriere jail name (check with `poudriere jail -l`).
 
 Flags:
 - `-t` — run port tests
@@ -54,7 +62,7 @@ Flags:
 - `-NN` — no-op on non-matching packages (build only what's specified)
 - `-C` — clean before build
 
-### 4. Analyze results
+### 5. Analyze results
 
 On **success**: proceed to commit.
 
@@ -70,7 +78,7 @@ Common failures:
 - Patch apply failures: patches need rebasing
 - Dependency issues: missing `BUILD_DEPENDS` or `LIB_DEPENDS`
 
-### 5. PHP flavor failures
+### 6. PHP flavor failures
 
 If some PHP flavors fail but others succeed, add `IGNORE_WITH_PHP` to the Makefile:
 
@@ -84,3 +92,4 @@ Then rebuild to verify the remaining flavors pass.
 
 - Poudriere covers `stage`, `check-plist`, and `package` — no need to run these manually.
 - Build logs are the primary debugging tool — always read them on failure before attempting fixes.
+- A freshly updated or stale package set may spend time rebuilding dependency packages before the target port starts. Check the live bulk log and queue files before assuming the target port is stuck.
