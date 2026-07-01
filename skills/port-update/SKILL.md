@@ -67,6 +67,8 @@ If patches fail to apply, rebase them. See `references/patch-rebase.md` for the 
 
 If upstream already includes a patch's changes, delete the patch file.
 
+After patching succeeds, re-check `SHEBANG_FILES` and `post-patch` path lists in the Makefile against the extracted tree. Upstream refactors often remove or rename test files; delete stale entries and add new ones only when they need path or interpreter rewriting.
+
 ### 6. Port-type-specific checks
 
 Consult the appropriate reference file for port-type-specific guidance:

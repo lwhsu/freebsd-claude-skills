@@ -6,8 +6,11 @@ After bumping the version, regenerate the cargo crate list:
 
 ```sh
 cd <ports-tree>/<category>/<portname>
-make cargo-crates > Makefile.crates
+make cargo-crates > /tmp/<portname>.Makefile.crates.new && \
+    mv /tmp/<portname>.Makefile.crates.new Makefile.crates
 ```
+
+Do not redirect directly to `Makefile.crates` unless you are certain the command cannot fail. If `make cargo-crates` errors, shell redirection can leave a truncated or invalid `Makefile.crates` behind.
 
 Then clean and regenerate distinfo:
 
@@ -43,6 +46,7 @@ The `distinfo` for cargo ports can be very large (hundreds of crate checksums). 
 1. Bump `DISTVERSION` in Makefile, remove `PORTREVISION`
 2. `make makesum` to fetch new source tarball
 3. `make extract BATCH=yes` to get the source
-4. `make cargo-crates > Makefile.crates` (or use the awk workaround)
+4. Generate `Makefile.crates` to a temporary file, then move it into place (or use the awk workaround)
 5. `make clean && make makesum` to fetch all crates and regenerate distinfo
-6. Test with poudriere
+6. Run `make patch BATCH=yes`, then review `SHEBANG_FILES` and `post-patch` file lists for stale or newly needed entries
+7. Test with poudriere
