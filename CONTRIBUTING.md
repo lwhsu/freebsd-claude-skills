@@ -22,7 +22,17 @@ Each `SKILL.md` starts with YAML frontmatter:
 ```yaml
 ---
 description: "Short description. This skill should be used when..."
+user_invocable: true
+arguments: "<arg>"          # optional; omit if the skill takes no arguments
 ---
 ```
 
 The `description` field is used by Claude Code for auto-discovery.
+
+## Adding a skill — checklist
+
+Update all of these in the same commit:
+
+1. `skills/<name>/SKILL.md`
+2. `README.md` — the Skills table (alphabetical) and the Usage list
+3. `.claude-plugin/marketplace.json` — the `skills` array (alphabetical)
