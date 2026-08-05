@@ -1,7 +1,7 @@
 {
   "name": "freebsd-claude-skills",
   "version": "0.1.0",
-  "description": "Claude Code skills for FreeBSD development (ports and src MFC workflows)",
+  "description": "Claude Code skills for FreeBSD development (ports, src, and doc workflows)",
   "author": "Li-Wen Hsu",
   "license": "BSD-2-Clause",
   "skills": [
