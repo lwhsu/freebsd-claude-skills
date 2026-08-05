@@ -1,5 +1,5 @@
 ---
-description: "Audit and clean up stale local and remote git branches by comparing file content against upstream, not commit hashes. This skill should be used when the user wants to tidy up branches, find which branches have already landed upstream, or prune personal fork remotes."
+description: "Audit and clean up stale local and remote git branches by comparing file content against upstream, not commit hashes. This skill should be used when the user wants to tidy up branches, find which branches have already landed upstream, or prune personal fork remotes. Works in FreeBSD ports, src, and doc trees."
 user_invocable: true
 arguments: "[remote ...]"
 ---
@@ -12,32 +12,52 @@ comparison rather than commit hashes.
 ## Why content, not hashes
 
 Work rarely lands as a literal `cherry-pick`. It may be rebased, squashed, amended by a
-committer, re-implemented by someone else, or superseded by a newer version of the same
-port. In all of those cases the commit hash changes, so `git branch --merged`,
-`git cherry`, and ancestry checks all report "not merged" for branches that are in fact
-obsolete. The only reliable question is: *does this branch still propose any file content
-that upstream does not already have?*
+committer, re-implemented by someone else, or superseded by a newer version. In all of
+those cases the commit hash changes, so `git branch --merged`, `git cherry`, and ancestry
+checks all report "not merged" for branches that are in fact obsolete. The only reliable
+question is: *does this branch still propose any file content that upstream does not
+already have?*
 
-## Inputs
-
-- Optional list of remotes to clean (e.g. `aitna github`). Default: all non-upstream remotes.
-- The upstream reference to compare against — for ports that is `freebsd/main`. Discover it:
+## Step 0 — Identify the repo and classify remotes
 
 ```sh
 git remote -v
+git remote get-url freebsd
 ```
 
-Identify which remote is the authoritative upstream (`git.freebsd.org` / `gitrepo.freebsd.org`)
-and which are personal forks. Confirm the choice with the user if ambiguous.
+The authoritative upstream is the remote named `freebsd`
+(`git.freebsd.org` / `gitrepo.freebsd.org`). From its URL, read the matching
+repo-specific notes **before Step 1** (reference branches and supersession
+heuristics differ per repo):
 
-## Step 0 — Sync
+| Upstream URL contains | Read |
+|---|---|
+| `ports.git` | `references/ports.md` |
+| `src.git` | `references/src.md` |
+| `doc.git` | `references/doc.md` |
+
+Other repos: proceed with the generic procedure; ask the user what the reference
+branches are.
+
+Classify every other remote into:
+
+- **Personal fork** — owned by the user (e.g. their GitHub forks). Eligible for cleanup.
+- **Third-party** — someone else's fork added to review their work (common in src/doc).
+  **Never candidates for deletion, local audit only.** Do not even enumerate their
+  branches as cleanup candidates.
+
+If ownership of a remote is not obvious from the URL, ask the user. If remotes were
+given as arguments, clean only those; verify each is a personal fork first.
+Default: all personal-fork remotes plus local branches.
+
+Then sync:
 
 ```sh
 git fetch --all --prune
 ```
 
-`--prune` is required: it removes remote-tracking refs for branches already deleted on the
-remote, and it surfaces force-updates. Read the fetch output — a line like
+`--prune` removes remote-tracking refs for branches already deleted on the remote, and
+surfaces force-updates. Read the fetch output — a line like
 
 ```
  + 57b453fa8fb3...b8b05035f3a9 fcitx5 -> github/fcitx5  (forced update)
@@ -57,18 +77,19 @@ git worktree list                # branches checked out elsewhere
 Exclude from the candidate set:
 
 - The upstream remote's own branches (`freebsd/*`) — they are the reference, not work.
-- Local branches that merely track an upstream branch: `main`, quarterly branches
-  (`2026Q3`), `stable/*`, `releng/*`. These are reference checkouts.
-  Exception: an *expired* quarterly branch (older than the current quarter) is a
-  legitimate deletion candidate — flag it, do not assume.
+- Local branches that merely track an upstream reference branch (see the repo-specific
+  notes for the exact list; `main` always qualifies). These are reference checkouts.
 - Any branch listed by `git worktree list` as checked out in another worktree. Deleting
   those breaks that worktree. Never touch them.
+- All branches on third-party remotes.
 - `HEAD` pseudo-refs from `git branch -r` output.
 
 ## Step 2 — Classify by content
 
 For each candidate ref, compute what the branch adds relative to its merge base, then ask
-whether upstream already has that exact content.
+whether upstream already has that exact content. `TARGET` is normally `freebsd/main`;
+branches based on another reference branch (e.g. a quarterly or `stable/*`) must be
+compared against that branch instead — see the repo-specific notes.
 
 ```sh
 TARGET=freebsd/main
@@ -117,27 +138,14 @@ one-off shell command. Two failure modes seen in practice:
 
 `NOT_MERGED` is not "keep". It means "a human must decide". Split it:
 
-**Superseded / obsolete** — the branch's intent is already satisfied, differently:
-
-```sh
-# Does the port/file exist upstream at all now?
-git cat-file -e "$TARGET:devel/foo/Makefile" && echo EXISTS
-
-# Is upstream's version newer than the branch's?
-git show "$TARGET:devel/foo/Makefile"  | grep -E '^(PORT|DIST)VERSION|^PORTREVISION'
-git show "$ref:devel/foo/Makefile"     | grep -E '^(PORT|DIST)VERSION|^PORTREVISION'
-
-# Was the port removed / marked expired upstream?
-git show "$TARGET:devel/foo/Makefile" | grep -E '^(DEPRECATED|EXPIRATION_DATE)'
-```
-
-Typical obsolete patterns: someone else added the same new port; upstream shipped a newer
-version than the branch proposed; the port was removed from the tree; the bug the branch
-fixed was fixed another way.
+**Superseded / obsolete** — the branch's intent is already satisfied, differently.
+Use the repo-specific heuristics from the reference file read in Step 0. Typical
+patterns: someone else landed equivalent work; upstream moved past the branch's
+version; the file/port was removed or relocated; the bug was fixed another way.
 
 **Genuinely pending** — real unlanded work. Keep, and say why in the report.
 
-Quote each judgment with the evidence command output. Do not assert "this port does not
+Quote each judgment with the evidence command output. Do not assert "this path does not
 exist upstream" from a scripted loop's output alone — re-run the check with an explicit,
 quoted path before reporting it as fact.
 
@@ -171,14 +179,12 @@ Batch per remote to keep it to one round trip each:
 # local
 git branch -D <branch1> <branch2> ...
 
-# remote (personal forks only — never the upstream remote)
+# remote (personal forks only — never upstream, never third-party remotes)
 git push <remote> --delete <branch1> <branch2> ...
 ```
 
 `git branch -D` (not `-d`) is needed because these branches are, by construction, not
 ancestors of `main` — that is the whole reason the content check exists.
-
-Never push a delete to the authoritative upstream remote from this skill.
 
 ## Step 6 — Verify
 
@@ -195,10 +201,9 @@ Report the final list.
 
 - Content comparison only. `git branch --merged` and hash matching are wrong here.
 - Scope the diff to the files the branch touched, or upstream churn hides the answer.
-- Reference branches (`main`, quarterlies, `stable/*`) and worktree branches are never
-  candidates.
+- Reference branches, worktree branches, and third-party remotes are never candidates.
 - `NOT_MERGED` requires human judgment, not automatic retention.
 - Re-verify any surprising scripted result with a clean, explicitly quoted command before
   reporting it.
 - No deletion without explicit per-group confirmation from the user.
-- Never delete branches on the upstream remote.
+- Never delete branches on the upstream `freebsd` remote or on third-party remotes.
