@@ -8,6 +8,7 @@
     "skills/branch-cleanup",
     "skills/port-bug",
     "skills/port-commit",
+    "skills/port-mfc",
     "skills/port-phab",
     "skills/port-pr",
     "skills/port-security",
