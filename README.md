@@ -10,6 +10,7 @@ Claude Code skills for FreeBSD development.
 | `port-commit` | Commit message formatting with FreeBSD trailers |
 | `port-mfc` | MFC (MFH) commits from main to a ports quarterly branch |
 | `port-phab` | Process Phabricator reviews |
+| `port-pr` | Process GitHub pull requests (freebsd/freebsd-ports mirror) |
 | `port-security` | Security advisory workflow (VuXML + port updates) |
 | `port-update` | Version update workflow (bump, patch, test, commit) |
 | `poudriere` | Test builds with poudriere |
@@ -40,6 +41,7 @@ In a Claude Code session within a FreeBSD ports or src tree:
 - `/port-bug 123456` - Process a Bugzilla ticket
 - `/port-security` - Handle a security advisory
 - `/port-phab D12345` - Apply a Phabricator review
+- `/port-pr 548` - Apply a GitHub pull request
 - `/poudriere devel/py-foo` - Run a test build
 - `/port-commit` - Format and create a commit
 - `/port-mfc abc1234` - MFC a commit from main to its quarterly branch (from its `MFC:` trailer)
