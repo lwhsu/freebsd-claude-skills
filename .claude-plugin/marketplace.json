@@ -5,6 +5,7 @@
   "author": "Li-Wen Hsu",
   "license": "BSD-2-Clause",
   "skills": [
+    "skills/branch-cleanup",
     "skills/port-bug",
     "skills/port-commit",
     "skills/port-phab",
