@@ -56,11 +56,11 @@ sudo poudriere bulk -tr -b latest -NN -C -j <jail> <category/portname>[@all]
 ```
 
 Flags:
-- `-t` — run port tests
-- `-r` — remove packages not listed
-- `-b latest` — use latest package set for dependencies
-- `-NN` — no-op on non-matching packages (build only what's specified)
-- `-C` — clean before build
+- `-t` — test the specified ports (DEVELOPER_MODE, stage-qa, check-plist, etc.)
+- `-r` — with `-t`, recursively test all dependencies built in this run too (not just the listed ports)
+- `-b latest` — fetch prebuilt packages from the official `latest` repo for dependencies instead of building them
+- `-NN` — do not commit/publish the package repository when the build completes
+- `-C` — clean (delete) existing packages of the listed ports only before building, forcing a rebuild
 
 ### 5. Analyze results
 
@@ -77,6 +77,7 @@ Common failures:
 - `stage-qa`: staging issues
 - Patch apply failures: patches need rebasing
 - Dependency issues: missing `BUILD_DEPENDS` or `LIB_DEPENDS`
+- `pkg-X.Y.Z is already installed` at the install phase, skipping everything: ports-mgmt/pkg needed a rebuild (e.g. jail newer than packages) and `-r` built it in test mode. Workaround: first build pkg into the same set without `-t`/`-r`, e.g. `sudo poudriere bulk -b latest -j <jail> [-p <tree>] ports-mgmt/pkg`, then rerun the test bulk. (Observed on netflix1 2026-10-09.)
 
 ### 6. PHP flavor failures
 
