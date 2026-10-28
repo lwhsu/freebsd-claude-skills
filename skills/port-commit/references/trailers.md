@@ -60,15 +60,15 @@ Security:	<VID-UUID>
 
 Only for commits that fix security vulnerabilities. The VID is the UUID from the VuXML entry.
 
-### MFC (Merge From Current)
+### MFH (Merge From Head)
 
 ```
-MFC:		<YYYYQN>
+MFH:		<YYYYQN>
 ```
 
-Example: `MFC:\t\t2026Q1`
+Example: `MFH:\t\t2026Q1`
 
-Two tabs after `MFC:`. Only for security updates that need backporting to quarterly branches.
+Two tabs after `MFH:`. Only for security updates that need backporting to quarterly branches.
 
 ## Ordering
 
@@ -78,7 +78,7 @@ Trailers should appear in this order:
 2. `Reported by:`
 3. `Approved by:`
 4. `Security:`
-5. `MFC:`
+5. `MFH:`
 6. `Differential Revision:`
 7. `Fixes:`
 

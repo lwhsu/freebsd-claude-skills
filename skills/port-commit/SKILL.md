@@ -46,7 +46,7 @@ Common trailers (in order):
 | `Reported by:` | Bug reporter (when NOT using their patch) |
 | `Approved by:` | Maintainer approval or portmgr blanket |
 | `Security:` | VuXML VID (security updates only) |
-| `MFC:` | Quarterly branch (security updates only) |
+| `MFH:` | Quarterly branch (security updates only) |
 | `Differential Revision:` | Phabricator review URL |
 | `Fixes:` | Hash + title of commit being fixed |
 

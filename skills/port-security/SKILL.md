@@ -48,7 +48,7 @@ The port update commit needs two extra trailers beyond the usual ones:
 
 ```
 Security:\t<VID>
-MFC:\t\tYYYYQN
+MFH:\t\tYYYYQN
 ```
 
 Where:
