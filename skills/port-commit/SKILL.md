@@ -68,8 +68,6 @@ category/portname: Update to X.Y.Z
 
 PR:\t\t123456
 Approved by:\tJohn Doe <john@example.com> (maintainer)
-
-Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
 EOF
 )"
 ```
@@ -94,5 +92,5 @@ git checkout main
 
 - Commit without GPG signature (`--no-gpg-sign`) — the user will amend with their signature later.
 - For `@FreeBSD.org` addresses in `Reported by:`, use just the account name (e.g., `se` not `Stefan Esser <se@FreeBSD.org>`).
-- Trailers go after the commit body, before `Co-Authored-By`.
+- Trailers go after the commit body. Do not add `Co-Authored-By:` or `Claude-Session:` lines.
 - When fixing a previous commit, get the PR number from that commit's message body: `git log --no-show-signature --format="%s%n%b" -1 <hash>`

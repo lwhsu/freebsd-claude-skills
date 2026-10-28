@@ -1,6 +1,6 @@
 # FreeBSD Ports Commit Trailer Reference
 
-Trailers are appended after the commit body, before `Co-Authored-By`. Each trailer uses **tab characters** after the colon for alignment.
+Trailers are appended after the commit body. Do not add `Co-Authored-By:` or `Claude-Session:` lines. Each trailer uses **tab characters** after the colon for alignment.
 
 ## Trailer formats
 
@@ -82,12 +82,6 @@ Trailers should appear in this order:
 6. `Differential Revision:`
 7. `Fixes:`
 
-Then a blank line, followed by:
-
-```
-Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
-```
-
 ## Complete example
 
 ```
@@ -96,8 +90,6 @@ devel/py-foo: Update to 1.2.3
 PR:		123456
 Reported by:	John Doe <john@example.com>
 Approved by:	Jane Smith <jane@example.com> (maintainer)
-
-Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
 ```
 
 ## Notes
