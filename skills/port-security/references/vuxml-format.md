@@ -41,7 +41,7 @@ VuXML entries are added to `security/vuxml/vuln.xml`.
   - Use `<bid>` for SecurityFocus BIDs (rare)
 - **dates**:
   - `discovery`: When the vulnerability was discovered/disclosed
-  - `entry`: Today's date (when the VuXML entry is created)
+  - `entry`: Today's date in UTC (`date -u +%F`), when the VuXML entry is created
 - **affects**: Package names and vulnerable version ranges.
   - `<lt>`: Less than (versions below the fix)
   - `<le>`: Less than or equal
