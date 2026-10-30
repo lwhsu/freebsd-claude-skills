@@ -52,3 +52,47 @@ be enforced by a script or a prompt, change that and note it here.
   reproduced the first one independently, so the depth pays off; size the
   weekly `-n` to the token budget rather than shrinking the per-item
   effort.
+- Verification (52 agents, 551 claims) disputed 10 claims, 1.8%, and
+  each dispute was real: a rewording that misdescribed the code, a
+  patch that changed the wrong field, a removal of a note that still
+  held.  In 4 of the 10 the second reviewer agreed with the verdict and
+  only corrected the text; after checking the corrected text against
+  the code, the orchestrator accepted those with `ledger.py merge -k
+  accept`.  Do not skip the second review to save tokens: it is what
+  catches confident mistakes.
+- `claims.py` queues only claims it has not queued before, so
+  verification started while triage was still running and the two
+  waves overlapped by about an hour.
+- Agents wrote line ranges as `[47, 49]`, `"47-49"` and `"47,49"`;
+  `ledger.py` now accepts all three.  Keep the prompts strict and the
+  merge lenient.
+- `apply.py` rejected three edits in manual pages: deleting a whole
+  `.\"` line removed a `.` that the token comparison counted.  A line
+  that holds only a roff comment is now skipped by the comparison.
+- 551 of 575 triaged items (96%) needed a change and only one was KEEP:
+  the priority-1 screening labels pick the right items.  Priority-2
+  items (about 1,300 outside vendor code) are likely to have more KEEP
+  and DESIGN verdicts.
+- `inventory.py` took `sys/conf/options` for a generated file because
+  its header mentions "LINT (generated from NOTES)"; the pattern now
+  ignores "generated from" right after "(".  Comments in really
+  generated files (OpenSSL manual pages built from pod, flex output, a
+  configure header, SWIG output: 23 this run) are never screened, by
+  design.
+- Writing 37 commit messages in the orchestrator would have filled its
+  context with briefs and diffs.  Seven writer agents, five or six
+  groups each (`references/commit-prompt.md`), took 9 to 10 minutes and
+  about 200k tokens each; every hash they cited resolved, and reading
+  all the messages took the orchestrator a quarter of an hour.
+- The FIX verdicts came with 184 patches that all apply to HEAD.  They
+  change code that nobody has built or run, so they are exported per
+  component (`fixes.py`) for a person to take up, never committed.
+  Export them before the comment edits are applied, so `git apply
+  --check` runs against the tree the reviewers saw.
+- `git stash` around a script that must see the pristine tree is fine
+  while agents only read: they were told not to touch the src tree.
+- A `__pycache__/*.pyc` got committed to the skills repo; the repo now
+  ignores `__pycache__/`.
+- Total subagent cost of the first run: about 49M tokens (screening
+  21.6M, triage 16.2M, verification 11.5M) plus commit messages and the
+  fix sorting, in about five hours of wall time.
