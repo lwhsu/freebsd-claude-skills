@@ -18,6 +18,11 @@ goes upstream without a human: FreeBSD's CONTRIBUTING.md refuses
 AI-generated changes that have not had substantial human review, so the
 commits and patches are proposals for a committer to review.
 
+Some FIX items are unpatched vulnerabilities.  The ledger, the patches,
+the spreadsheet and the doc describe them, so all of them stay private:
+never in this public repo, a public fork, a public bug report or a
+mailing list.  See "Security findings" below.
+
 Read `references/lessons.md` before starting.
 
 ## Invocation
@@ -33,9 +38,11 @@ Read `references/lessons.md` before starting.
 
 - `$SKILL` — this directory: `scripts/`, `references/`.
 - `$SRC` — the src checkout; the upstream remote is `freebsd`.
-- `$STATE` — `data/src-todo-review/` at the top of the skills repo:
-  `ledger.jsonl` (every marker comment ever seen and what was decided) and
-  `commits.jsonl` (the commits made for it), carried between runs.
+- `$STATE` — a private directory, kept between runs in a private repo
+  or another place the user chooses (ask if none is set up): `ledger.jsonl`
+  (every marker comment ever seen and what was decided), `commits.jsonl`
+  (the commits made for it) and `<date>/fix-proposals/`.  Not the skills
+  repo: it is public, and the state describes unpatched bugs.
 - `$RUN` — scratch space for this run (batches, agent output); never
   committed.
 
@@ -187,6 +194,19 @@ python3 $SKILL/scripts/ledger.py merge -l $STATE/ledger.jsonl -k sort \
 Copy `$RUN/fix-proposals` to `$STATE/<date>/fix-proposals` so the patches
 outlive the run.
 
+## Security findings
+
+The fix sorting agent sets `secteam` on items that someone other than
+the local superuser can trigger: an unprivileged user, root in a jail, a
+remote or Bluetooth peer, a guest against its host, a malicious device,
+crafted on-disk or network input.  Those go to the FreeBSD Security Team
+before anything else: secteam@FreeBSD.org, or PGP-encrypted mail to
+security-officer@FreeBSD.org for sensitive ones, with the analysis and
+the proposed patch.  Tell the user which items they are and let them
+report; do not post them anywhere public, and keep them out of commit
+messages.  Mark them in the doc as reported privately rather than
+describing how to trigger them, in case the doc is shared.
+
 ## Step 6 — Apply the comment edits
 
 ```sh
@@ -243,5 +263,6 @@ not in chat.
 
 Append to `references/lessons.md` what went wrong or was slow in this run
 and how the next run avoids it, and change the scripts or prompts when
-the fix is mechanical.  Commit `$STATE` and any skill changes to the
-skills repo and push.
+the fix is mechanical; keep vulnerability details out of it, as this repo
+is public.  Commit the skill changes to the skills repo and `$STATE` to
+its private home, and push both.

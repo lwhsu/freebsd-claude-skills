@@ -92,7 +92,7 @@ def main():
     if args.commits:
         commits = [json.loads(l) for l in open(args.commits) if l.strip()]
     committed = {i: c for c in commits for i in c.get("ids", [])}
-    cats = {r["id"]: {k: r["fix_" + k] for k in ("category", "severity", "cluster")
+    cats = {r["id"]: {k: r["fix_" + k] for k in ("category", "severity", "cluster", "secteam")
                       if "fix_" + k in r}
             for r in live if "fix_severity" in r}
     head = live[0].get("head", "") if live else ""
@@ -140,7 +140,7 @@ def main():
                             r["path"], r["line"]))
     tcols = [("ID", 15), ("檔案:行", 46), ("子系統", 22), ("標記", 9),
              ("判定", 10), ("信心", 8), ("第二審", 12), ("嚴重度", 8),
-             ("類型", 14), ("摘要", 50), ("理由（英文）", 80), ("修正方案", 70),
+             ("安全通報", 8), ("類型", 14), ("摘要", 50), ("理由（英文）", 80), ("修正方案", 70),
              ("工作量", 7), ("風險", 8), ("Patch", 7), ("證據", 50),
              ("處理狀態", 12), ("Commit", 14), ("群組", 18), ("初篩", 11)]
     header(triage, [h for h, _ in tcols], [w for _, w in tcols])
@@ -155,7 +155,7 @@ def main():
         vals = [r["id"], "%s:%d" % (r["path"], r["line"]), r.get("area", ""),
                 ",".join(r.get("markers", [])), r["verdict"],
                 r.get("confidence", ""), verify_text(r), k.get("severity", ""),
-                k.get("category", ""), r.get("summary_zh", ""),
+                "是" if k.get("secteam") else "", k.get("category", ""), r.get("summary_zh", ""),
                 r.get("rationale", ""), r.get("fix", ""), r.get("effort", ""),
                 r.get("risk", ""), "有" if r.get("patch") else "",
                 "\n".join(r.get("evidence", []) or []),
@@ -266,6 +266,8 @@ def main():
                  "disputed 第二審不同意；committed 已提交。「第二審」欄的「修正後採用」"
                  "表示第二審同意判定但修正了文字，經人工核對後採用修正版。"),
         ("注意", "所有判定與修改都由 AI 產生，送上游前需要人工審查（見 CONTRIBUTING.md）。"),
+        ("保密", "本表含尚未修正的安全問題（「安全通報」欄為「是」）與修正 patch，請勿公開散布；"
+                 "這些項目請先私下通報 FreeBSD Security Team（secteam@FreeBSD.org）。"),
     ]
     for i, (a, b) in enumerate(lines, 1):
         styled(readme, i, [a, b], wrap=True)

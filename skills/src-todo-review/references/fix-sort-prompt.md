@@ -39,10 +39,17 @@ Do this:
    medium (wrong behaviour or a wrong result that a user can observe, or a
    latent bug that needs unusual conditions), low (no user-visible effect
    today: dead code, cleanup, documentation, an unimplemented corner case).
-3. Group items that one change would resolve (duplicated comments, one
+3. Set "secteam" to true when someone other than the local superuser
+   could trigger the problem: an unprivileged local user, root inside a
+   jail (VNET jails run their own ipfw and dummynet), a remote network or
+   Bluetooth peer, a guest VM against its host, a malicious USB or other
+   external device, or crafted on-disk or network input such as a
+   filesystem image; false otherwise.  When unsure, true.  These are
+   reported privately to the FreeBSD Security Team.
+4. Group items that one change would resolve (duplicated comments, one
    directory to retire, one function to fix in several places) into
    clusters with a short name.
-4. Pick the 15 to 20 most important items (high first, then medium items
+5. Pick the 15 to 20 most important items (high first, then medium items
    with broad reach).  For each pick, check the claim against the code
    yourself: read it at the reviewed commit with `git -C {src} show
    {head}:<path>` (the working tree may hold uncommitted edits that shift
@@ -52,16 +59,17 @@ Do this:
 
 Write two files in {run}/:
 - fix-categories.jsonl: one JSON object per item, for every item:
-  {"id", "category", "severity", "cluster" (name or ""), "title_zh" (one
-  line, at most 40 Chinese characters, Taiwan-style Traditional Chinese,
-  saying what is wrong)}.  Write it with a short Python script using
-  json.dumps(..., ensure_ascii=False).
+  {"id", "category", "severity", "secteam", "cluster" (name or ""),
+  "title_zh" (one line, at most 40 Chinese characters, Taiwan-style
+  Traditional Chinese, saying what is wrong)}.  Write it with a short
+  Python script using json.dumps(..., ensure_ascii=False).
 - fix-highlights.md, in Taiwan-style Traditional Chinese (code
-  identifiers, paths and commit hashes as they are): counts per category
-  and per severity; the clusters with their item ids and what the single
-  change would be; then the picks, each as a short paragraph: id,
-  path:line, what is wrong and what a user would see, the proposed fix in
-  one or two sentences, effort/risk, and what you confirmed in the code.
-  End with the picks you dropped and why.
+  identifiers, paths and commit hashes as they are): the secteam items
+  first (id, path:line, who can trigger it and with what, one line each);
+  counts per category and per severity; the clusters with their item ids
+  and what the single change would be; then the picks, each as a short
+  paragraph: id, path:line, what is wrong and what a user would see, the
+  proposed fix in one or two sentences, effort/risk, and what you
+  confirmed in the code.  End with the picks you dropped and why.
 
 When done, reply with one line: `<n> items categorized, <k> highlights`.

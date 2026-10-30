@@ -16,8 +16,9 @@ upstream, by our commit, or the comment was edited and got a new id).
 "merge" records screening, triage or verification results; "accept" takes
 the second review's corrected text for disputed items that a person read
 and accepted ({"id", "by", "note"} per line); "commit" marks the items of
-the commits that commits.py made; "sort" keeps the category, severity and
-cluster that the fix sorting agent gave FIX and DESIGN items.  The ledger
+the commits that commits.py made; "sort" keeps the category, severity,
+cluster and secteam flag that the fix sorting agent gave FIX and DESIGN
+items.  The ledger
 is the state carried from one weekly run to the next; everything else is
 regenerated.
 
@@ -135,7 +136,7 @@ def merge(args, ledger):
             if rec["status"] in ("new", "screened"):
                 rec["status"] = "triaged"
         elif args.kind == "sort":
-            for k in ("category", "severity", "cluster", "title_zh"):
+            for k in ("category", "severity", "secteam", "cluster", "title_zh"):
                 if r.get(k) is not None:
                     rec["fix_" + k] = r[k]
             rec["sort_date"] = args.date

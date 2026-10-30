@@ -96,3 +96,9 @@ be enforced by a script or a prompt, change that and note it here.
 - Total subagent cost of the first run: about 49M tokens (screening
   21.6M, triage 16.2M, verification 11.5M) plus commit messages and the
   fix sorting, in about five hours of wall time.
+- Several FIX verdicts are unpatched vulnerabilities that a remote peer,
+  a guest or a jail can trigger.  The first plan kept the ledger and the
+  patches in this repo, which is public, and would have published them.
+  The state now lives in a private place, the fix sorting agent flags
+  `secteam` items, and those go to secteam@FreeBSD.org before anything
+  else.  Keep vulnerability details out of this repo, lessons included.
