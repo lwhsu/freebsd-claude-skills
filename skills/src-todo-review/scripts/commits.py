@@ -10,10 +10,10 @@
 "plan" groups the applied edits by component (the driver, library or
 program, as a commit subject would name it; components with fewer than
 --min edits are pooled by tree: sys/dev, sys, lib, bin, ...) and writes,
-per group,
-outdir/<group>.md: the items with the verdict, rationale and evidence
-behind each edit, and the diff of the group's files.  A writer (person or
-subagent) then puts the commit message in outdir/<group>.msg.
+per group, outdir/<group>.md ("/" in a group name becomes "_"): the
+items with the verdict, rationale and evidence behind each edit, and the
+diff of the group's files.  A writer (person or subagent) then puts the
+commit message in outdir/<group>.msg.
 
 "make" commits each group that has a .msg file, in plan order, staging
 only that group's files, and records the commits in outdir/commits.jsonl
@@ -93,7 +93,8 @@ def plan(args):
         files = sorted(set(e["path"] for e in es))
         diff = subprocess.run(["git", "-C", args.src, "diff", "--"] + files,
                               capture_output=True, text=True).stdout
-        with open(os.path.join(args.out, name + ".md"), "w") as f:
+        base = name.replace("/", "_")
+        with open(os.path.join(args.out, base + ".md"), "w") as f:
             f.write("# %s: %d edits in %d files\n\n" % (name, len(es), len(files)))
             for e in es:
                 r = ledger[e["id"]]
@@ -107,7 +108,8 @@ def plan(args):
                 if r.get("verify_notes"):
                     f.write("Second review: %s\n\n" % r["verify_notes"])
             f.write("## Diff\n\n```diff\n%s```\n" % diff)
-        order.append({"group": name, "ids": [e["id"] for e in es], "files": files})
+        order.append({"group": name, "base": base, "ids": [e["id"] for e in es],
+                      "files": files})
     with open(os.path.join(args.out, "plan.json"), "w") as f:
         json.dump(order, f, indent=1)
     print("%d edits in %d groups" % (len(applied), len(order)))
@@ -118,7 +120,7 @@ def make(args):
         order = json.load(f)
     done = []
     for g in order:
-        msgf = os.path.join(args.out, g["group"] + ".msg")
+        msgf = os.path.join(args.out, g["base"] + ".msg")
         if not os.path.exists(msgf):
             print("%s: no message, skipped" % g["group"], file=sys.stderr)
             continue

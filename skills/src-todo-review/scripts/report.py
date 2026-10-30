@@ -4,14 +4,16 @@
 #
 """Write the tracking spreadsheet from the ledger.
 
-    report.py -l ledger.jsonl [-c commits.jsonl] -o review.xlsx --date D
+    report.py -l ledger.jsonl [-c commits.jsonl] [-f fix-categories.jsonl] -o review.xlsx --date D
 
 Sheets: README, Summary (formulas over All items), Triage (one row per
 reviewed item, with a status column to update by hand), By area
 (formulas), Commits, and All items (every marker comment still in the
 tree).  Counts are COUNTIFS formulas, so filtering or correcting a row in
 All items updates them; run the xlsx skill's recalc.py afterwards so the
-cached values are filled in.
+cached values are filled in.  With -f, the Triage sheet also shows the
+severity, category and cluster that the fix sorting agent gave each FIX
+and DESIGN item, and sorts them by severity.
 """
 
 import argparse
@@ -28,6 +30,7 @@ HEAD_FILL = PatternFill("solid", fgColor="DDE4EE")
 LABELS = ["STALE", "ACTIONABLE", "NOTE", "NOT_MARKER", "LOOK"]
 VERDICTS = ["REMOVE", "REWORD", "FIX", "DESIGN", "KEEP", "NOT_MARKER", "UNSURE"]
 TRACK = ["待處理", "已提交到分支", "已送審", "已併入上游", "不處理"]
+SEVERITY = ["high", "medium", "low"]
 UPSTREAM = "https://github.com/freebsd/freebsd-src/blob/%s/%s#L%d"
 
 ALL_COLS = [  # header, key, width
@@ -76,6 +79,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("-l", dest="ledger", required=True)
     ap.add_argument("-c", dest="commits")
+    ap.add_argument("-f", dest="fixcat", help="categories of the FIX and DESIGN items")
     ap.add_argument("-o", dest="out", required=True)
     ap.add_argument("--date", required=True)
     args = ap.parse_args()
@@ -87,6 +91,12 @@ def main():
     if args.commits:
         commits = [json.loads(l) for l in open(args.commits) if l.strip()]
     committed = {i: c for c in commits for i in c.get("ids", [])}
+    cats = {}
+    if args.fixcat:
+        for l in open(args.fixcat):
+            if l.strip():
+                c = json.loads(l)
+                cats[c["id"]] = c
     head = live[0].get("head", "") if live else ""
     n = len(live)
 
@@ -125,30 +135,39 @@ def main():
     # Triage
     tri = [r for r in live if r.get("verdict")]
     order = {v: i for i, v in enumerate(VERDICTS)}
-    tri.sort(key=lambda r: (order.get(r["verdict"], 9), r["path"], r["line"]))
+    sev = {v: i for i, v in enumerate(SEVERITY)}
+    tri.sort(key=lambda r: (order.get(r["verdict"], 9),
+                            sev.get(cats.get(r["id"], {}).get("severity"), 9),
+                            r["path"], r["line"]))
     tcols = [("ID", 15), ("檔案:行", 46), ("子系統", 22), ("標記", 9),
-             ("判定", 10), ("信心", 8), ("第二審", 12), ("摘要", 50),
-             ("理由（英文）", 80), ("修正方案", 70), ("工作量", 7),
-             ("風險", 8), ("證據", 50), ("處理狀態", 12), ("Commit", 14),
-             ("初篩", 11)]
+             ("判定", 10), ("信心", 8), ("第二審", 12), ("嚴重度", 8),
+             ("類型", 14), ("摘要", 50), ("理由（英文）", 80), ("修正方案", 70),
+             ("工作量", 7), ("風險", 8), ("Patch", 7), ("證據", 50),
+             ("處理狀態", 12), ("Commit", 14), ("群組", 18), ("初篩", 11)]
     header(triage, [h for h, _ in tcols], [w for _, w in tcols])
+    track_col = get_column_letter([h for h, _ in tcols].index("處理狀態") + 1)
+    sev_col = get_column_letter([h for h, _ in tcols].index("嚴重度") + 1)
     dv = DataValidation(type="list", formula1='"%s"' % ",".join(TRACK),
                         allow_blank=True)
     triage.add_data_validation(dv)
     for i, r in enumerate(tri, 2):
         c = committed.get(r["id"])
+        k = cats.get(r["id"], {})
         vals = [r["id"], "%s:%d" % (r["path"], r["line"]), r.get("area", ""),
                 ",".join(r.get("markers", [])), r["verdict"],
-                r.get("confidence", ""), verify_text(r), r.get("summary_zh", ""),
+                r.get("confidence", ""), verify_text(r), k.get("severity", ""),
+                k.get("category", ""), r.get("summary_zh", ""),
                 r.get("rationale", ""), r.get("fix", ""), r.get("effort", ""),
-                r.get("risk", ""), "\n".join(r.get("evidence", []) or []),
+                r.get("risk", ""), "有" if r.get("patch") else "",
+                "\n".join(r.get("evidence", []) or []),
                 r.get("track") or ("已提交到分支" if c else "待處理"),
-                c["sha"][:12] if c else "", r.get("screen_label", "")]
+                c["sha"][:12] if c else "", k.get("cluster", ""),
+                r.get("screen_label", "")]
         styled(triage, i, vals, wrap=True)
         cell = triage.cell(row=i, column=2)
         cell.hyperlink = UPSTREAM % (r.get("head", head), r["path"], r["line"])
         cell.font = Font(name=FONT, size=10, color="1F4E99", underline="single")
-        dv.add("N%d" % i)
+        dv.add("%s%d" % (track_col, i))
     triage.auto_filter.ref = "A1:%s%d" % (get_column_letter(len(tcols)),
                                           max(2, len(tri) + 1))
 
@@ -180,6 +199,13 @@ def main():
         row = styled(summary, row, [v, '=COUNTIFS(%s,"%s")' % (vcol, v),
                                     '=COUNTIFS(%s,"%s",%s,"同意")' % (vcol, v, acol)])
     row += 1
+    if cats:
+        row = styled(summary, row, ["FIX/DESIGN 嚴重度", "數量", "依 Triage 表計算"],
+                     bold=True, fill=HEAD_FILL)
+        srng = "Triage!$%s$2:$%s$%d" % (sev_col, sev_col, max(2, len(tri) + 1))
+        for v in SEVERITY:
+            row = styled(summary, row, [v, '=COUNTIFS(%s,"%s")' % (srng, v), ""])
+        row += 1
     row = styled(summary, row, ["頂層目錄", "數量", ""], bold=True, fill=HEAD_FILL)
     tops = Counter(r["path"].split("/")[0] if "/" in r["path"] else "(top)" for r in live)
     for t, _ in tops.most_common():
@@ -223,6 +249,9 @@ def main():
                      "NOT_MARKER 不是待辦標記；LOOK 需要細查。"),
         ("判定", "REMOVE 刪除；REWORD 改寫；FIX 可修正；DESIGN 需要設計討論；"
                  "KEEP 保留；NOT_MARKER 非標記；UNSURE 證據不足。"),
+        ("嚴重度", "FIX/DESIGN 項目：high 使用者可能遇到當機、記憶體毀損、資料遺失或安全問題；"
+                   "medium 可觀察到的錯誤行為或需特殊條件的潛在問題；low 目前沒有使用者可見的影響。"
+                   "「Patch」欄標示是否附有修正 patch（尚未編譯測試）。"),
         ("狀態", "new 未初篩；screened 已初篩；triaged 已審查；verified 第二審同意；"
                  "disputed 第二審不同意；committed 已提交。"),
         ("注意", "所有判定與修改都由 AI 產生，送上游前需要人工審查（見 CONTRIBUTING.md）。"),

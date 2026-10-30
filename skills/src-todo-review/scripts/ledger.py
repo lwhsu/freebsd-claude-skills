@@ -5,15 +5,18 @@
 """Keep the review ledger: one line per marker comment ever seen.
 
     ledger.py update -l ledger.jsonl -i inventory.jsonl --date YYYY-MM-DD
-    ledger.py merge  -l ledger.jsonl -k screen|triage|verify -r results.jsonl --date D
+    ledger.py merge  -l ledger.jsonl -k screen|triage|verify|accept -r results.jsonl --date D
+    ledger.py merge  -l ledger.jsonl -k commit -r commits.jsonl --date D
     ledger.py stats  -l ledger.jsonl
 
 "update" adds the items of a new inventory (status "new"), refreshes the
 location of known ones, and marks ids that disappeared as "gone" (fixed
 upstream, by our commit, or the comment was edited and got a new id).
-"merge" records screening, triage or verification results.  The ledger is
-the state carried from one weekly run to the next; everything else is
-regenerated.
+"merge" records screening, triage or verification results; "accept" takes
+the second review's corrected text for disputed items that a person read
+and accepted ({"id", "by", "note"} per line); "commit" marks the items of
+the commits that commits.py made.  The ledger is the state carried from
+one weekly run to the next; everything else is regenerated.
 
 Status values, in the order an item moves through them:
   new        found, not screened yet
@@ -21,7 +24,8 @@ Status values, in the order an item moves through them:
   triaged    has a triage verdict
   verified   a second reviewer agreed with a REMOVE/REWORD/FIX verdict
   disputed   the second reviewer disagreed; needs a human
-  committed  the change is in a commit on the review branch
+  committed  the change is in a commit on a review branch (and the
+             comment is still in freebsd/main)
   gone       no longer in the tree
 """
 
@@ -94,6 +98,16 @@ def merge(args, ledger):
         if not line.strip():
             continue
         r = json.loads(line)
+        if args.kind == "commit":
+            # A line of commits.py's commits.jsonl: one commit, many ids.
+            for i in r["ids"]:
+                if i in ledger:
+                    ledger[i].update({"status": "committed", "commit": r["sha"],
+                                      "commit_subject": r["subject"],
+                                      "commit_date": args.date})
+                else:
+                    print("unknown id %s" % i, file=sys.stderr)
+            continue
         if r.get("range") is not None:
             r["range"] = as_range(r["range"])
         rec = ledger.get(r["id"])
@@ -149,7 +163,8 @@ def main():
     ap.add_argument("cmd", choices=["update", "merge", "stats"])
     ap.add_argument("-l", dest="ledger", required=True)
     ap.add_argument("-i", dest="inventory")
-    ap.add_argument("-k", dest="kind", choices=["screen", "triage", "verify", "accept"])
+    ap.add_argument("-k", dest="kind",
+                    choices=["screen", "triage", "verify", "accept", "commit"])
     ap.add_argument("-r", dest="results")
     ap.add_argument("--date")
     args = ap.parse_args()

@@ -4,7 +4,7 @@
 #
 """Apply REMOVE/REWORD edits to a src tree and prove they touch only comments.
 
-    apply.py -C srcdir [-n] < edits.jsonl
+    apply.py -C srcdir [-n] [-a applied.jsonl] < edits.jsonl
 
 Each edit is {"id", "path", "range": [first, last], "replacement"}, with
 line numbers of the file at the inventory's HEAD.  Edits to one file are
@@ -14,7 +14,8 @@ or whose edits overlap, is left untouched and reported.  Manual page text
 is not a comment, so edits to it are only reported for a human to check.
 
 Prints one line per edit: "applied", or "skipped: <reason>".  With -n,
-checks without writing.
+checks without writing.  With -a, also writes the edits that were applied
+(or with -n would be) to a file, for commits.py.
 """
 
 import argparse
@@ -49,6 +50,9 @@ def strip_comments(text, lang):
     for ln in lines:
         if lang == "roff":
             c = inventory.roff_comment_col(ln)
+            if c >= 0 and ln[:c].strip() in ("", "."):
+                # A whole-line comment: ".\"" is a request that does nothing.
+                continue
         elif lang == "asm":
             c = inventory.asm_comment_col(ln, len(ln))
         else:
@@ -61,7 +65,9 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("-C", dest="src", default=".")
     ap.add_argument("-n", dest="dry", action="store_true")
+    ap.add_argument("-a", dest="applied", help="write the applied edits here")
     args = ap.parse_args()
+    done = []
 
     edits = defaultdict(list)
     for line in sys.stdin:
@@ -105,9 +111,15 @@ def main():
             else:
                 print("%s %s:%d-%d applied" % (e["id"], path, e["range"][0],
                                               e["range"][1]))
-        if reason is None and not args.dry:
-            with open(fn, "w", encoding="utf-8", errors="surrogateescape") as f:
-                f.write(new)
+        if reason is None:
+            done += es
+            if not args.dry:
+                with open(fn, "w", encoding="utf-8", errors="surrogateescape") as f:
+                    f.write(new)
+    if args.applied:
+        with open(args.applied, "w") as f:
+            for e in done:
+                f.write(json.dumps(e, ensure_ascii=False) + "\n")
 
 
 if __name__ == "__main__":
