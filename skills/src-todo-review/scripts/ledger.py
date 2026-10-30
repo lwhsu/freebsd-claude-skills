@@ -27,6 +27,7 @@ Status values, in the order an item moves through them:
 
 import argparse
 import json
+import re
 import sys
 from collections import Counter
 
@@ -80,11 +81,21 @@ def update(args, ledger):
             rec["gone_date"] = args.date
 
 
+def as_range(v):
+    """Agents write [first, last], "first-last" or "first,last"."""
+    if isinstance(v, str):
+        a, b = re.split(r"[-,:\s]+", v.strip())[:2]
+        return [int(a), int(b)]
+    return [int(v[0]), int(v[1])] if v else v
+
+
 def merge(args, ledger):
     for line in open(args.results):
         if not line.strip():
             continue
         r = json.loads(line)
+        if r.get("range") is not None:
+            r["range"] = as_range(r["range"])
         rec = ledger.get(r["id"])
         if rec is None:
             print("unknown id %s" % r["id"], file=sys.stderr)
@@ -106,6 +117,12 @@ def merge(args, ledger):
             rec["triage_head"] = rec.get("head")
             if rec["status"] in ("new", "screened"):
                 rec["status"] = "triaged"
+        elif args.kind == "accept":
+            # A human (or the orchestrator, reading the diff) accepts the
+            # second reviewer's corrected text for a disputed item.
+            rec["status"] = "verified"
+            rec["accepted_by"] = r.get("by", "orchestrator")
+            rec["accept_note"] = r.get("note", "")
         elif args.kind == "verify":
             rec["verify_agree"] = r["agree"]
             rec["verify_verdict"] = r["verdict"]
@@ -132,7 +149,7 @@ def main():
     ap.add_argument("cmd", choices=["update", "merge", "stats"])
     ap.add_argument("-l", dest="ledger", required=True)
     ap.add_argument("-i", dest="inventory")
-    ap.add_argument("-k", dest="kind", choices=["screen", "triage", "verify"])
+    ap.add_argument("-k", dest="kind", choices=["screen", "triage", "verify", "accept"])
     ap.add_argument("-r", dest="results")
     ap.add_argument("--date")
     args = ap.parse_args()
