@@ -80,10 +80,11 @@ be enforced by a script or a prompt, change that and note it here.
   configure header, SWIG output: 23 this run) are never screened, by
   design.
 - Writing 37 commit messages in the orchestrator would have filled its
-  context with briefs and diffs.  Seven writer agents, five or six
-  groups each (`references/commit-prompt.md`), took 9 to 10 minutes and
-  about 200k tokens each; every hash they cited resolved, and reading
-  all the messages took the orchestrator a quarter of an hour.
+  context with briefs and diffs.  Seven writer agents, four to seven
+  groups each (`references/commit-prompt.md`), took 9 to 19 minutes and
+  195k to 301k tokens each, 1.7M in all; every hash they cited resolved,
+  and reading all the messages took the orchestrator a quarter of an
+  hour.
 - The FIX verdicts came with 184 patches that all apply to HEAD.  They
   change code that nobody has built or run, so they are exported per
   component (`fixes.py`) for a person to take up, never committed.
@@ -93,9 +94,13 @@ be enforced by a script or a prompt, change that and note it here.
   while agents only read: they were told not to touch the src tree.
 - A `__pycache__/*.pyc` got committed to the skills repo; the repo now
   ignores `__pycache__/`.
-- Total subagent cost of the first run: about 49M tokens (screening
-  21.6M, triage 16.2M, verification 11.5M) plus commit messages and the
-  fix sorting, in about five hours of wall time.
+- The fix sorting agent took 41 minutes, 110 tool calls and 445k tokens
+  for 234 items, most of it checking its 18 picks against the code.  It
+  moved three items up to high and two down after reading the code, so
+  the check is worth its cost.
+- Total subagent cost of the first run: about 51M tokens (screening
+  21.6M, triage 16.2M, verification 11.5M, commit messages 1.7M, fix
+  sorting 0.4M), in about five and a half hours of wall time.
 - Several FIX verdicts are unpatched vulnerabilities that a remote peer,
   a guest or a jail can trigger.  The first plan kept the ledger and the
   patches in this repo, which is public, and would have published them.
