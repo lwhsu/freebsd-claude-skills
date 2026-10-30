@@ -16,6 +16,7 @@ Claude Code skills for FreeBSD development.
 | `port-update` | Version update workflow (bump, patch, test, commit) |
 | `poudriere` | Test builds with poudriere |
 | `src-mfc` | MFC commits from main to supported stable branches |
+| `src-todo-review` | Review XXX/TODO/FIXME comments in src: screen, triage, cross-verify, commit the obsolete ones, track weekly |
 
 ## Installation
 
@@ -48,6 +49,7 @@ In a Claude Code session within a FreeBSD ports or src tree:
 - `/port-mfc abc1234` - MFC a commit from main to its quarterly branch (from its `MFC:` trailer)
 - `/port-mfc abc1234 -q 2026Q3` - MFC a commit to a specific quarterly branch
 - `/branch-cleanup` - Audit local and fork branches, delete the ones already upstream
+- `/src-todo-review` - Weekly review of XXX/TODO/FIXME comments in src (screen new ones, triage the next 300)
 
 ## License
 
