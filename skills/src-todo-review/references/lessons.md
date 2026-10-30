@@ -39,3 +39,16 @@ be enforced by a script or a prompt, change that and note it here.
   (`CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS`); a launch beyond that is
   refused.  Keep 19 screening agents and one slot for other work, and
   start the next batch as each one reports back.
+- The container restarted in the middle of the triage wave and stopped
+  all 20 running agents.  Files under the scratchpad and the checkouts
+  survived.  Resuming each stopped agent with SendMessage to its agent
+  id let it continue from its transcript; `collect.py` then tells which
+  batches still lack output, and those are simply run again.  Keep every
+  agent's output in a file named after its batch so that a restart costs
+  nothing but time.
+- Deep triage is the expensive step: about 23 minutes, 100 tool calls and
+  250k subagent tokens per batch of 10.  The pilot batch found three real
+  bugs (two memory errors and a locking error) and its verifier
+  reproduced the first one independently, so the depth pays off; size the
+  weekly `-n` to the token budget rather than shrinking the per-item
+  effort.
