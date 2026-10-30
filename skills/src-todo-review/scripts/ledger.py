@@ -7,6 +7,7 @@
     ledger.py update -l ledger.jsonl -i inventory.jsonl --date YYYY-MM-DD
     ledger.py merge  -l ledger.jsonl -k screen|triage|verify|accept -r results.jsonl --date D
     ledger.py merge  -l ledger.jsonl -k commit -r commits.jsonl --date D
+    ledger.py merge  -l ledger.jsonl -k sort -r fix-categories.jsonl --date D
     ledger.py stats  -l ledger.jsonl
 
 "update" adds the items of a new inventory (status "new"), refreshes the
@@ -15,8 +16,10 @@ upstream, by our commit, or the comment was edited and got a new id).
 "merge" records screening, triage or verification results; "accept" takes
 the second review's corrected text for disputed items that a person read
 and accepted ({"id", "by", "note"} per line); "commit" marks the items of
-the commits that commits.py made.  The ledger is the state carried from
-one weekly run to the next; everything else is regenerated.
+the commits that commits.py made; "sort" keeps the category, severity and
+cluster that the fix sorting agent gave FIX and DESIGN items.  The ledger
+is the state carried from one weekly run to the next; everything else is
+regenerated.
 
 Status values, in the order an item moves through them:
   new        found, not screened yet
@@ -131,6 +134,11 @@ def merge(args, ledger):
             rec["triage_head"] = rec.get("head")
             if rec["status"] in ("new", "screened"):
                 rec["status"] = "triaged"
+        elif args.kind == "sort":
+            for k in ("category", "severity", "cluster", "title_zh"):
+                if r.get(k) is not None:
+                    rec["fix_" + k] = r[k]
+            rec["sort_date"] = args.date
         elif args.kind == "accept":
             # A human (or the orchestrator, reading the diff) accepts the
             # second reviewer's corrected text for a disputed item.
@@ -164,7 +172,8 @@ def main():
     ap.add_argument("-l", dest="ledger", required=True)
     ap.add_argument("-i", dest="inventory")
     ap.add_argument("-k", dest="kind",
-                    choices=["screen", "triage", "verify", "accept", "commit"])
+                    choices=["screen", "triage", "verify", "accept", "commit",
+                             "sort"])
     ap.add_argument("-r", dest="results")
     ap.add_argument("--date")
     args = ap.parse_args()

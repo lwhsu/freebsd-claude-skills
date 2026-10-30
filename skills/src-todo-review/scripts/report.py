@@ -4,16 +4,16 @@
 #
 """Write the tracking spreadsheet from the ledger.
 
-    report.py -l ledger.jsonl [-c commits.jsonl] [-f fix-categories.jsonl] -o review.xlsx --date D
+    report.py -l ledger.jsonl [-c commits.jsonl] -o review.xlsx --date D
 
 Sheets: README, Summary (formulas over All items), Triage (one row per
 reviewed item, with a status column to update by hand), By area
 (formulas), Commits, Patches (the proposed patch of each FIX item), and
 All items (every marker comment still in the tree).  Counts are COUNTIFS formulas, so filtering or correcting a row in
 All items updates them; run the xlsx skill's recalc.py afterwards so the
-cached values are filled in.  With -f, the Triage sheet also shows the
-severity, category and cluster that the fix sorting agent gave each FIX
-and DESIGN item, and sorts them by severity.
+cached values are filled in.  The Triage sheet also shows the severity,
+category and cluster that the fix sorting agent gave each FIX and DESIGN
+item (ledger.py merge -k sort), and sorts them by severity.
 """
 
 import argparse
@@ -72,6 +72,8 @@ def col_of(key):
 def verify_text(r):
     if "verify_agree" not in r:
         return ""
+    if r.get("accepted_by"):
+        return "修正後採用"
     return "同意" if r["verify_agree"] else "不同意:%s" % r.get("verify_verdict", "")
 
 
@@ -79,7 +81,6 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("-l", dest="ledger", required=True)
     ap.add_argument("-c", dest="commits")
-    ap.add_argument("-f", dest="fixcat", help="categories of the FIX and DESIGN items")
     ap.add_argument("-o", dest="out", required=True)
     ap.add_argument("--date", required=True)
     args = ap.parse_args()
@@ -91,12 +92,9 @@ def main():
     if args.commits:
         commits = [json.loads(l) for l in open(args.commits) if l.strip()]
     committed = {i: c for c in commits for i in c.get("ids", [])}
-    cats = {}
-    if args.fixcat:
-        for l in open(args.fixcat):
-            if l.strip():
-                c = json.loads(l)
-                cats[c["id"]] = c
+    cats = {r["id"]: {k: r["fix_" + k] for k in ("category", "severity", "cluster")
+                      if "fix_" + k in r}
+            for r in live if "fix_severity" in r}
     head = live[0].get("head", "") if live else ""
     n = len(live)
 
@@ -265,7 +263,8 @@ def main():
                    "medium 可觀察到的錯誤行為或需特殊條件的潛在問題；low 目前沒有使用者可見的影響。"
                    "「Patch」欄標示是否附有修正 patch（尚未編譯測試）。"),
         ("狀態", "new 未初篩；screened 已初篩；triaged 已審查；verified 第二審同意；"
-                 "disputed 第二審不同意；committed 已提交。"),
+                 "disputed 第二審不同意；committed 已提交。「第二審」欄的「修正後採用」"
+                 "表示第二審同意判定但修正了文字，經人工核對後採用修正版。"),
         ("注意", "所有判定與修改都由 AI 產生，送上游前需要人工審查（見 CONTRIBUTING.md）。"),
     ]
     for i, (a, b) in enumerate(lines, 1):

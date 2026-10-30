@@ -176,8 +176,16 @@ review's notes and whether it applies.  These change code; they are never
 committed by this skill.  Then start one subagent with
 `references/fix-sort-prompt.md` on `$RUN/fix-proposals/items.md`: it
 gives every FIX and DESIGN item a category and severity, groups the ones
-a single change resolves, and checks the top picks against the code, for
-the report and the doc.
+a single change resolves, and checks the top picks against the code
+(`$RUN/fix-highlights.md`, for the doc).  Keep its categories:
+
+```sh
+python3 $SKILL/scripts/ledger.py merge -l $STATE/ledger.jsonl -k sort \
+    -r $RUN/fix-categories.jsonl --date <today>
+```
+
+Copy `$RUN/fix-proposals` to `$STATE/<date>/fix-proposals` so the patches
+outlive the run.
 
 ## Step 6 — Apply the comment edits
 
