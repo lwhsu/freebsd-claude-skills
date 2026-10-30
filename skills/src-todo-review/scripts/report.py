@@ -8,8 +8,8 @@
 
 Sheets: README, Summary (formulas over All items), Triage (one row per
 reviewed item, with a status column to update by hand), By area
-(formulas), Commits, and All items (every marker comment still in the
-tree).  Counts are COUNTIFS formulas, so filtering or correcting a row in
+(formulas), Commits, Patches (the proposed patch of each FIX item), and
+All items (every marker comment still in the tree).  Counts are COUNTIFS formulas, so filtering or correcting a row in
 All items updates them; run the xlsx skill's recalc.py afterwards so the
 cached values are filled in.  With -f, the Triage sheet also shows the
 severity, category and cluster that the fix sorting agent gave each FIX
@@ -107,6 +107,7 @@ def main():
     triage = wb.create_sheet("Triage")
     byarea = wb.create_sheet("By area")
     csheet = wb.create_sheet("Commits")
+    psheet = wb.create_sheet("Patches")
     allws = wb.create_sheet("All items")
     ref = "'All items'!$%s$2:$%s$%d"
 
@@ -233,6 +234,16 @@ def main():
         styled(csheet, i, [c["sha"][:12], c["subject"], len(c.get("ids", [])),
                            c.get("files", "")])
 
+    # Patches: one row per FIX item with a patch; a cell holds 32,767 characters
+    header(psheet, ["ID", "檔案:行", "第二審", "嚴重度", "Patch"], [15, 46, 12, 8, 120])
+    prow = 2
+    for r in tri:
+        if r.get("verdict") == "FIX" and r.get("patch"):
+            styled(psheet, prow, [r["id"], "%s:%d" % (r["path"], r["line"]), verify_text(r),
+                                  cats.get(r["id"], {}).get("severity", ""),
+                                  r["patch"][:32000]])
+            prow += 1
+
     # README
     readme.column_dimensions["A"].width = 18
     readme.column_dimensions["B"].width = 100
@@ -244,6 +255,7 @@ def main():
         ("Triage", "已深入審查的項目。「處理狀態」欄可下拉選擇，手動更新。"),
         ("By area", "依子系統統計初篩標籤與審查進度（公式）。"),
         ("Commits", "已提交到審查分支的 commit。"),
+        ("Patches", "FIX 項目附的修正 patch（unified diff，尚未編譯測試）；複製儲存格內容即可用 git apply 套用。"),
         ("All items", "樹中所有含標記的註解區塊，一列一筆；檔案欄連到 GitHub 上該行。"),
         ("初篩標籤", "STALE 很可能已過時；ACTIONABLE 仍有效且可修；NOTE 說明性質；"
                      "NOT_MARKER 不是待辦標記；LOOK 需要細查。"),
