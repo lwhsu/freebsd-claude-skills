@@ -40,7 +40,15 @@ All of these cost time in real runs.
   SIGSEGV on quit was counted as a pass. The kernel logs such crashes as
   "exited on signal 11" (`dmesg`), but only for signals that dump core.
 - The default core size limit may be 0; `KEEP_CORES=1` for `run.sh`
-  collects cores in `keep/<tag>/cores`.
+  collects cores in `keep/<tag>/cores`. With the common
+  `kern.corefile=%N.core` every crash overwrites the previous core, so a
+  harness that expects more than one should change into a directory per
+  cycle before starting the program (the core goes to the crashing
+  process's working directory). Do not change the host's sysctl.
+- A rare crash may only show up with different timing. One second-instance
+  crash appeared only with `ktrace` attached (1 in 200 handovers, 0 in 200
+  without). A tight loop around the suspect step finds it faster than full
+  cycles.
 - A window title can be set before the program processes input (web
   frontends: the native title first, the page title later). Restrict
   `GUI_PROBE_WIN` to titles in which the probe key really works, so that a

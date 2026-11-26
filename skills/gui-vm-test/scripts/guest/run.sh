@@ -53,6 +53,8 @@ bad=
 # KEEP_CORES=1: dump cores of the program under test into keep/<tag>/cores
 # (the default core size limit may be 0, and a GONE or CRASH result is
 # hard to explain without one).  Cores of large programs take gigabytes.
+# With kern.corefile=%N.core each crash overwrites the last core; see
+# references/pitfalls.md.
 if [ -n "$KEEP_CORES" ]; then
 	mkdir -p "$K/cores"
 	ulimit -c unlimited
