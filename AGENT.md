@@ -2,7 +2,8 @@
 
 Claude Code skills for FreeBSD development (ports, src, doc). Each skill is a
 directory under `skills/<name>/` containing `SKILL.md` and optionally
-`references/` for detail files loaded on demand.
+`references/` for detail files loaded on demand and `scripts/` for helper
+programs the skill runs.
 
 ## Adding or renaming a skill — update ALL of these in ONE commit
 

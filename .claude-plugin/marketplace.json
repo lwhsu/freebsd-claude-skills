@@ -6,6 +6,7 @@
   "license": "BSD-2-Clause",
   "skills": [
     "skills/branch-cleanup",
+    "skills/gui-vm-test",
     "skills/port-bug",
     "skills/port-commit",
     "skills/port-mfc",

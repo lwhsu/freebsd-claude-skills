@@ -6,6 +6,7 @@ Each skill lives in `skills/<name>/` with:
 
 - `SKILL.md` — The skill definition (< 500 lines). Loaded by Claude Code when invoked.
 - `references/` — Optional detailed reference files that the skill reads as needed.
+- `scripts/` — Optional helper programs the skill runs (POSIX `sh`, or Python without third-party modules).
 
 ## Guidelines
 

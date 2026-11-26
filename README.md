@@ -7,6 +7,7 @@ Claude Code skills for FreeBSD development.
 | Skill | Description |
 |-------|-------------|
 | `branch-cleanup` | Prune branches already landed upstream (content-based, not hash-based) |
+| `gui-vm-test` | Test a GUI program under Xvfb + xdotool in a throwaway bhyve VM, with self-check, classification and control build |
 | `port-bug` | Process Bugzilla tickets (triage, apply patches, close) |
 | `port-commit` | Commit message formatting with FreeBSD trailers |
 | `port-mfc` | MFC (MFH) commits from main to a ports quarterly branch |
@@ -48,6 +49,7 @@ In a Claude Code session within a FreeBSD ports or src tree:
 - `/port-mfc abc1234` - MFC a commit from main to its quarterly branch (from its `MFC:` trailer)
 - `/port-mfc abc1234 -q 2026Q3` - MFC a commit to a specific quarterly branch
 - `/branch-cleanup` - Audit local and fork branches, delete the ones already upstream
+- `/gui-vm-test security/keepassxc 14.5 15.1` - Run a GUI port in bhyve guests and check it for hangs or crashes
 
 ## License
 
