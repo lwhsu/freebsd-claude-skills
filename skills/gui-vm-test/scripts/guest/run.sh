@@ -16,6 +16,7 @@
 #                 build, and for the control
 #                 "test -x /usr/local/bin/foo && ! nm -D /usr/local/bin/foo | grep -q new_symbol"
 # A package that is not installed or a file that does not exist is a mismatch.
+# KEEP_CORES=1 keeps core dumps in $HOME/keep/<tag>/cores.
 [ $# -ge 2 ] || { echo "usage: $0 <tag> <harness.sh> [VAR=VALUE ...]" >&2; exit 64; }
 T=$1; H=$2; shift 2
 K=$HOME/keep/$T
@@ -49,7 +50,16 @@ bad=
 	[ -z "$bad" ] || echo "IDENT MISMATCH"
 	[ -z "$bad" ]
 } > "$K/ident.txt" 2>&1 || { echo MISMATCH > "$K/done"; exit 1; }
+# KEEP_CORES=1: dump cores of the program under test into keep/<tag>/cores
+# (the default core size limit may be 0, and a GONE or CRASH result is
+# hard to explain without one).  Cores of large programs take gigabytes.
+if [ -n "$KEEP_CORES" ]; then
+	mkdir -p "$K/cores"
+	ulimit -c unlimited
+	H=$(realpath "$H")
+	cd "$K/cores" || exit 1
+fi
 sh "$H" > "$K/harness.log" 2>&1
 rc=$?
-grep -E 'RESULT|SUMMARY|TIMEOUT|classification|STOP_ON_FAIL' "$K/harness.log" > "$K/summary.txt"
+grep -E 'RESULT|SUMMARY|TIMEOUT|CRASH|classification|STOP_ON_FAIL' "$K/harness.log" > "$K/summary.txt"
 echo "done rc=$rc" > "$K/done"

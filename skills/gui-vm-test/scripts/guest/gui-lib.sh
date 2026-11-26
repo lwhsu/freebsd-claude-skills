@@ -15,6 +15,7 @@
 
 : "${GUI_DISPLAY:=:1}" "${GUI_SCREEN:=1280x1024x24}" "${GUI_OUT:=$HOME/gui-out}"
 HANGS=0
+CRASHES=0
 GUI_PID=
 _gui_load=
 
@@ -98,6 +99,22 @@ gui_launch() {
 	GUI_PID=$!
 }
 gui_gone() { ! kill -0 "$GUI_PID" 2>/dev/null; }
+# gui_reap: after gui_gone, read the exit status of GUI_PID (started by
+# gui_launch, so a child of this shell).  Sets GUI_EXIT to "exit N" or
+# "signal N"; succeeds only for "exit 0".  gui_gone alone cannot tell a
+# clean exit from a crash on the way out.
+gui_reap() {
+	wait "$GUI_PID" 2>/dev/null
+	_rc=$?
+	if [ "$_rc" -gt 128 ]; then GUI_EXIT="signal $((_rc - 128))"; else GUI_EXIT="exit $_rc"; fi
+	[ "$_rc" = 0 ]
+}
+# gui_crash <label>: the program ended, but not with exit 0.  Counted in
+# CRASHES, separately from the timeouts in HANGS.
+gui_crash() {
+	CRASHES=$((CRASHES + 1))
+	gui_log "  !!! CRASH at $1 (pid $GUI_PID): $GUI_EXIT; see app-stderr.log and cores"
+}
 gui_nthreads() { procstat -t "$GUI_PID" 2>/dev/null | tail -n +2 | wc -l | tr -d ' '; }
 
 # gui_freeze: stop the program so that the next step must time out.  This is

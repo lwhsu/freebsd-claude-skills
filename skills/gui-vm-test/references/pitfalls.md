@@ -34,6 +34,17 @@ All of these cost time in real runs.
 - A second instance may hand over to a running one and exit (single-instance
   programs). Kill leftovers and remove their sockets/lock files before each
   launch.
+- **Gone is not the same as exited cleanly.** A program that crashes on the
+  way out passes a `wait_for ... gui_gone` step. Call `gui_reap` after it
+  (exit status; `gui_crash` counts the failure in `CRASHES`). Without it a
+  SIGSEGV on quit was counted as a pass. The kernel logs such crashes as
+  "exited on signal 11" (`dmesg`), but only for signals that dump core.
+- The default core size limit may be 0; `KEEP_CORES=1` for `run.sh`
+  collects cores in `keep/<tag>/cores`.
+- A window title can be set before the program processes input (web
+  frontends: the native title first, the page title later). Restrict
+  `GUI_PROBE_WIN` to titles in which the probe key really works, so that a
+  start-up stuck earlier is classified NO WINDOW, not UNRESPONSIVE.
 
 ## Load and timing
 

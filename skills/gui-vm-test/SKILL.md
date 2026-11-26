@@ -32,8 +32,7 @@ first run and `references/harness-design.md` before writing a harness.
   kernel or base libraries, scheduling/race problems (real vCPUs), tests that
   must not disturb the host.
 - A jail with Xvfb is enough when the host's kernel and base are the right
-  ones. The guest scripts do not depend on bhyve, but this skill has only
-  been exercised in VMs.
+  ones. The guest scripts do not depend on bhyve; see "Running in a jail".
 
 ## What the scripts assume
 
@@ -230,6 +229,31 @@ In a jail nothing disappears with the guest. Remove what the guest scripts
 made: `$HOME/keep/`, `/tmp/gui-rt-<uid>`, the D-Bus socket in `/tmp`, and any
 `Xvfb` or `dbus-daemon` still running (`pgrep -lf 'Xvfb|dbus-daemon'`), then
 the jail itself if it was made for the test.
+
+### Running in a jail
+
+Used once so far (a GTK/WebKitGTK program, 2026-11-26) on a host without
+vm-bhyve. It worked with these changes to the procedure:
+
+- Userland: copy a matching base read-only (for example a poudriere jail
+  directory with `tar`), then `cp /etc/resolv.conf` into it.
+- Create the jail on the command line only, no jail.conf or rc.conf:
+  `jail -c name=<n> path=<dir> host.hostname=<n> ip4=inherit ip6=inherit
+  sysvshm=new sysvsem=new sysvmsg=new mount.devfs devfs_ruleset=4 persist`.
+  `ip4=inherit` gives the jail the host's network, so no proxy is needed.
+- Limit the CPUs with `cpuset -j <n> -l 0-3` and report that count. Inside
+  the jail `hw.ncpu` still shows all host CPUs, so pass `LOAD=` explicitly.
+- Run everything with `jexec -l <n> ...` instead of `gssh.sh`, and poll
+  `<dir>/root/keep/<tag>/done` from the host.
+- `dbus-uuidgen --ensure` once before the first run.
+- Building the package inside the jail: run `make install-missing-packages`
+  first. Without it a missing FETCH_DEPENDS (npm) made `make checksum` start
+  building node from source. Then run `make package NO_DEPENDS=yes`.
+- Cleanup: `jail -r` does not unmount the devfs mounted by
+  `mount.devfs` given on the command line. Check `mount | grep <dir>` and
+  `umount <dir>/dev` before `chflags -R noschg` and `rm -rf <dir>`.
+- `pkill`/`pgrep` select a jail with `-j <n>`; `ps` uses `-J <n>`.
+- The kernel is the host's. Say so in the report.
 
 ### 9. Report
 

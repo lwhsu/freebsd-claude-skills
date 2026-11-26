@@ -40,6 +40,7 @@ cycle() {
 	gui_key "$WIN" Return
 	wait_for "$T_QUIT" gui_gone || { gui_fail "$lab-quit"; return; }
 	t3=$(gui_now)
+	gui_reap || gui_crash "$lab-quit"
 	gui_log "  RESULT $lab: open=$(gui_el $t0 $t1) step=$(gui_el $t1 $t2) quit=$(gui_el $t2 $t3)"
 }
 
@@ -53,7 +54,7 @@ case ${MODE:-all} in
 selftest)
 	cycle selftest freeze
 	cycle post1
-	gui_log "=== SUMMARY selftest: timeouts=$HANGS (expected 1)"
+	gui_log "=== SUMMARY selftest: timeouts=$HANGS (expected 1) crashes=$CRASHES"
 	;;
 cycles|all)
 	[ "${LOAD:-0}" = 0 ] || gui_load_start "$LOAD"
@@ -70,7 +71,9 @@ cycles|all)
 	done
 	gui_load_stop
 	real=$HANGS
-	gui_log "=== SUMMARY cycles: n=${NCYC:-5} load=${LOAD:-0} timeouts=$real (expected 0)"
+	# cycles actually run: STOP_ON_FAIL may end the loop early
+	ran=$(( i > ${NCYC:-5} ? ${NCYC:-5} : i ))
+	gui_log "=== SUMMARY cycles: n=$ran/${NCYC:-5} load=${LOAD:-0} timeouts=$real (expected 0) crashes=$CRASHES (expected 0)"
 	GUI_KEEP_FAILED=
 	if [ "${MODE:-all}" = all ] && [ "$i" -gt "${NCYC:-5}" ]; then
 		cycle selftest freeze
