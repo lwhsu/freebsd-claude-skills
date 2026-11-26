@@ -35,6 +35,23 @@ first run and `references/harness-design.md` before writing a harness.
   ones. The guest scripts do not depend on bhyve, but this skill has only
   been exercised in VMs.
 
+## What the scripts assume
+
+Nothing about a particular host is built in; addresses, switch, guest
+directory, NAT and DNS are discovered in step 1 and passed as arguments.
+The assumptions are:
+
+- a FreeBSD host managing guests with `sysutils/vm-bhyve` (default guest
+  template, file-backed `disk0.img`), `sysutils/edk2-bhyve`, an existing
+  switch, `sudo`, and Python 3 for the helper servers;
+- guests made from the official UFS VM images, with a `vtnet0` interface
+  and root login over ssh.
+
+Not exercised so far: a `vm_dir` that is not on ZFS, a switch with working
+NAT (no proxy), no DNS forwarder on the gateway, architectures other than
+amd64. If the host manages bhyve some other way, `mkvm.sh` does not apply;
+the guest scripts still do.
+
 ## Rules for a shared host
 
 - sudo only for your own guests: `vm` on guests you created, `mdconfig`,
@@ -204,6 +221,15 @@ sudo vm list; sudo mdconfig -l; zfs list -r <vm dataset>; sockstat -4l | grep <g
 ```
 
 Only the pre-existing guests and services may remain.
+
+The work directory `$W` is yours to finish: keep the evidence, delete the
+image unless it is worth caching for the next test, and say in the report
+what was left and where.
+
+In a jail nothing disappears with the guest. Remove what the guest scripts
+made: `$HOME/keep/`, `/tmp/gui-rt-<uid>`, the D-Bus socket in `/tmp`, and any
+`Xvfb` or `dbus-daemon` still running (`pgrep -lf 'Xvfb|dbus-daemon'`), then
+the jail itself if it was made for the test.
 
 ### 9. Report
 
