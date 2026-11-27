@@ -28,6 +28,13 @@ is specific. `example-harness.sh` is a complete, working harness for xterm.
    (`doc [Locked] - App` versus `doc - App`). Others: a window appearing or
    disappearing, a file being written, process exit, `xprop` properties.
    Do not modify the program to observe it.
+   For a network feature, run a small test server that the program is
+   made to contact, give every cycle its own URL and marker in the page
+   title, and log per request which process and uid hold the client end
+   of the connection (`sockstat --libxo json -4 -c -n -p <peer port>` on
+   15 and later). That shows not only that a page loaded but which path
+   it took (for example through a proxy run by another user rather than
+   directly), and the window title shows the page reached the screen.
 3. **Actions** as key sequences (`ctrl+l`, typed text, `Return`). Prefer
    keyboard shortcuts over mouse coordinates.
 4. **Probe key**: a shortcut that makes a healthy program exit

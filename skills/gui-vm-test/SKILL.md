@@ -137,6 +137,9 @@ options may repeat, processed in order):
   catalogue; after `poudriere bulk -NN` the packages sit in `.building/All`
   without one. When a proxy is set, add `NO_PROXY=<gateway>` so that this
   repository is fetched directly.
+  The next `poudriere bulk` (a control build, a rebuild) replaces what is
+  in `.building/All`. Copy the packages under test, and dependencies that
+  take hours to build, into `$W` first and record their sha256.
 - `-f /root/<file>.pkg`: a package file copied in with `gssh.sh -c`
   (replaces an installed package of that name); dependencies come from the
   official repository.
@@ -202,6 +205,16 @@ When reporting "fixed": install a build without the fix in the same guest
 same test with the same load. A fix result means something only if the
 control fails there. If the control does not fail, raise repetitions and
 load before concluding anything.
+
+For a port patch, build the control with the same pipeline: move the
+patch out of the ports tree for that one `poudriere bulk` and put it back
+only after the build has finished (poudriere reads `files/` when it
+reaches the patch phase, not at start). Check the control package lacks
+the change (`tar -xOf <pkg> <file> | grep`). The control should fail with
+the specific signature of the bug, not just time out. Afterwards install
+the patched package again, compare the identity hash with the earlier
+runs, and repeat a short run, so that the later results are not from the
+control.
 
 ### 8. Collect, then clean up
 
