@@ -54,6 +54,45 @@ All of these cost time in real runs.
   `GUI_PROBE_WIN` to titles in which the probe key really works, so that a
   start-up stuck earlier is classified NO WINDOW, not UNRESPONSIVE.
 
+## Chromium and Electron programs
+
+- **Drive them with the DevTools protocol (CDP), judge them from
+  outside.** Start the program with `--remote-debugging-port=<port>
+  --remote-debugging-address=127.0.0.1` (how to pass Chromium flags
+  depends on the program; Electron apps often take an environment
+  variable). A small client using `Runtime.evaluate`,
+  `Input.dispatchMouseEvent` and `Input.insertText`, finding elements by
+  `data-testid` or accessible name, is much more reliable than screen
+  coordinates; `scripts/guest/cdp.mjs` is such a client (Node 22 or
+  newer, no modules). Keep pass/fail on outside observations (window title,
+  side effects such as requests seen by a test server), not on CDP.
+- **Every CDP call needs a timeout that covers connecting.** A stopped
+  or hung browser process accepts the TCP connection on the debugging
+  port but never answers the HTTP or WebSocket handshake, so a
+  per-command timeout is not enough. The self-check found this: the
+  harness hung instead of reporting the frozen step. A key press that
+  starts a navigation may also get no reply.
+- **Children can inherit the debugging listening socket.** Helper
+  processes the program spawns (a background service it manages) were
+  seen holding it. A helper left over from a killed cycle keeps the
+  port: the next instance cannot bind it and CDP clients hang. Kill the
+  helpers with the program and check the port is free (`sockstat -4l`)
+  before each launch.
+- The debugging port is open to every local user while it listens (and
+  to `ip4=inherit` jails): open it only during runs.
+- Network I/O is done by a separate utility process (the network
+  service), not by `GUI_PID`. Per-socket checks (sockstat) see that pid.
+- On other platforms than macOS no key may quit the program (the quit
+  menu role is macOS only). Use `gui_app_probe` for the probe, for
+  example a click on the program's own close button with
+  `xdotool mousemove --window <wid> <x> <y> click 1`.
+- **Session restore reloads the last page at start-up.** A restarted
+  program fetched the previous cycle's page again. Make per-cycle
+  markers unique per run (a run prefix) and match them exactly, so that
+  requests from earlier runs, or `c10` when looking for `c1`, are never
+  counted. Without it a check "all N subresources arrived" was
+  satisfied by an earlier run's log lines.
+
 ## Load and timing
 
 - **Match the number of `yes` jobs to the vCPU count.** On an 8 vCPU guest,

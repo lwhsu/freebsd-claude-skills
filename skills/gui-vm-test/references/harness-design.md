@@ -16,6 +16,7 @@ is specific. `example-harness.sh` is a complete, working harness for xterm.
 | `gui_freeze` | SIGSTOP the program: the positive control |
 | `gui_snap <label>`, `gui_shot <label>` | thread list + kernel stacks, screenshot |
 | `gui_fail <label>` | on timeout: evidence, classification, kill (kept with `GUI_KEEP_FAILED`); counts in `HANGS` |
+| `gui_app_probe` (harness) | optional: an input action that makes a healthy program exit, used instead of `GUI_PROBE_KEY` when no key quits it |
 
 ## What the harness must define
 
@@ -30,7 +31,8 @@ is specific. `example-harness.sh` is a complete, working harness for xterm.
 3. **Actions** as key sequences (`ctrl+l`, typed text, `Return`). Prefer
    keyboard shortcuts over mouse coordinates.
 4. **Probe key**: a shortcut that makes a healthy program exit
-   (`GUI_PROBE_WIN`, `GUI_PROBE_KEY`). A program stuck in a blocking wait
+   (`GUI_PROBE_WIN`, `GUI_PROBE_KEY`), or a `gui_app_probe` function
+   when only a click on the program's own close button does. A program stuck in a blocking wait
    does not process it; a slow one does.
 5. Optionally **`gui_app_evidence`** for the signature of the expected bug,
    for example a gdb command printing a variable in the frames of interest,

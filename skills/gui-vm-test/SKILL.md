@@ -232,8 +232,9 @@ the jail itself if it was made for the test.
 
 ### Running in a jail
 
-Used once so far (a GTK/WebKitGTK program, 2026-11-26) on a host without
-vm-bhyve. It worked with these changes to the procedure:
+Used twice so far on a host without vm-bhyve (a GTK/WebKitGTK program,
+2026-11-26; an Electron program talking to a server process, 2026-11-28).
+It worked with these changes to the procedure:
 
 - Userland: copy a matching base read-only (for example a poudriere jail
   directory with `tar`), then `cp /etc/resolv.conf` into it.
@@ -254,6 +255,26 @@ vm-bhyve. It worked with these changes to the procedure:
   `umount <dir>/dev` before `chflags -R noschg` and `rm -rf <dir>`.
 - `pkill`/`pgrep` select a jail with `-j <n>`; `ps` uses `-J <n>`.
 - The kernel is the host's. Say so in the report.
+- Run the program as an unprivileged user when the test is about users,
+  permissions or the sandbox (and it usually should be: root changes
+  Chromium's sandbox and makes uid checks meaningless). Create users with
+  `pw useradd` in the jail and start `run.sh` with `jexec -l -U <user>`;
+  `gui-lib.sh` and `run.sh` work unprivileged (procstat and gdb on the
+  user's own processes, `pkg query`). `jexec -l -U nobody` fails because
+  its home is `/nonexistent`; use `jexec -U nobody` and `cd /tmp`.
+- `ip4=inherit` shares the host's loopback. Services of other host users
+  on 127.0.0.1 are reachable from the jail, and the program's default
+  ports may already belong to the host user's own instance of the same
+  program (a client that probes its default port on start would connect
+  to it). Give every test instance its own port, find out what the
+  program connects to by default, and check with `sockstat -4c` in the
+  jail that nothing reaches host services. Everything the test starts is
+  reachable by every local user: keep it on loopback, set a password
+  where it has one, turn off phone-home features (relays, update
+  checks), and stop it afterwards.
+- `osrelease=`/`osreldate=` (only at creation; `jail -m` refuses) change
+  what `uname -r` and `os.release()` report, which reaches code paths
+  chosen by OS version. The userland stays the same; say which one ran.
 
 ### 9. Report
 

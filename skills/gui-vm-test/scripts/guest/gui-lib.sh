@@ -12,6 +12,11 @@
 #                              before the probe key and before gdb attaches
 #   GUI_PROBE_WIN, GUI_PROBE_KEY   window regex and key that make a healthy
 #                              program exit; used to tell "slow" from "stuck"
+#   gui_app_probe              instead of GUI_PROBE_KEY: an input action that
+#                              makes a healthy program exit (for example a
+#                              click on its own close button when no key
+#                              quits it); GUI_PROBE_WIN still selects the
+#                              window that must exist
 
 : "${GUI_DISPLAY:=:1}" "${GUI_SCREEN:=1280x1024x24}" "${GUI_OUT:=$HOME/gui-out}"
 HANGS=0
@@ -170,16 +175,25 @@ gui_fail() {
 	''|Z*) _cls="GONE: the process exited or crashed (see app-stderr.log, look for a core)" ;;
 	T*) _cls="STOPPED: self-check signature (SIGSTOP)" ;;
 	*)
-		if [ -z "$GUI_PROBE_KEY" ]; then
+		if command -v gui_app_probe > /dev/null; then
+			_probe="gui_app_probe"
+		else
+			_probe=$GUI_PROBE_KEY
+		fi
+		if [ -z "$_probe" ]; then
 			_cls="ALIVE (no probe key defined)"
 		elif ! gui_has_window "$GUI_PROBE_WIN"; then
 			_cls="ALIVE, NO WINDOW: nothing matches '$GUI_PROBE_WIN' (start-up problem; see screenshot and app-stderr.log)"
 		else
-			gui_key "$GUI_PROBE_WIN" "$GUI_PROBE_KEY"
-			if wait_for 15 gui_gone; then
-				_cls="ALIVE, RESPONSIVE: exited on $GUI_PROBE_KEY (slow step, or input/focus problem)"
+			if [ "$_probe" = gui_app_probe ]; then
+				gui_app_probe
 			else
-				_cls="ALIVE, UNRESPONSIVE: no exit on $GUI_PROBE_KEY within 15s (hang)"
+				gui_key "$GUI_PROBE_WIN" "$GUI_PROBE_KEY"
+			fi
+			if wait_for 15 gui_gone; then
+				_cls="ALIVE, RESPONSIVE: exited on $_probe (slow step, or input/focus problem)"
+			else
+				_cls="ALIVE, UNRESPONSIVE: no exit on $_probe within 15s (hang)"
 			fi
 		fi
 		;;
